@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <base href="./../" />
+        <title>Source of PPC\CharStream from PPC</title>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/javascript; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/css; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1.0" />
+
+        <link rel="stylesheet" href="./css/main.css" media="all" />
+        <link rel="stylesheet" href="./css/prism.css" media="all" />
+    </head>
+    <body>
+        <div id="search" role="search">
+            <div>
+                <input type="search" placeholder="Initializing search…" disabled />
+            </div>
+        </div>
+
+        <main>
+            <aside>
+    <header>
+        <a href="./">
+            <img src="https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0" alt="Home" />
+        </a>
+    </header>
+</aside>
+
+<article>
+    <pre id="L" data-line="," class="line-numbers"><code class="language-php no-wrap-hooks">&lt;?php
+
+declare(strict_types=1);
+
+namespace PPC;
+
+use OutOfBoundsException;
+use SeekableIterator;
+
+class CharStream implements SeekableIterator
+{
+    /**
+     * @var string
+     */
+    private $string;
+
+    /**
+     * @var int
+     */
+    private $position;
+
+    public function __construct(string $string)
+    {
+        $this-&gt;string = $string;
+
+        $this-&gt;rewind();
+    }
+
+    public function current()
+    {
+        return $this-&gt;string[$this-&gt;position];
+    }
+
+    public function next()
+    {
+        ++$this-&gt;position;
+    }
+
+    public function key()
+    {
+        return $this-&gt;position;
+    }
+
+    public function valid()
+    {
+        return $this-&gt;position &lt; mb_strlen($this-&gt;string);
+    }
+
+    public function rewind()
+    {
+        $this-&gt;position = 0;
+    }
+
+    public function seek($position)
+    {
+        if ($position &gt; mb_strlen($this-&gt;string)) {
+            throw new OutOfBoundsException();
+        }
+
+        $this-&gt;position = $position;
+    }
+
+    public function cut(int $offset, int $length)
+    {
+        return mb_substr($this-&gt;string, $offset, $length);
+    }
+}
+</code></pre>
+</article>
+        </main>
+
+        <script type="text/javascript" src="./javascript/search.elm.js"></script>
+        <script type="text/javascript" src="./javascript/search-index.js"></script>
+        <script type="text/javascript" src="./javascript/search-metadata.js"></script>
+        <script type="text/javascript" src="./javascript/application.js"></script>
+        <script type="text/javascript" src="./javascript/prism.js"></script>
+        <script type="text/javascript" src="./javascript/prism-abbreviate.js" async defer></script>
+    </body>
+</html>

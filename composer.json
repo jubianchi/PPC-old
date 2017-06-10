@@ -1,0 +1,38 @@
+{
+    "name": "jubianchi/ppc",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "jubianchi",
+            "email": "contact@jubianchi.fr"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Hywan/Kitab"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "PPC\\": "src/"
+        },
+        "files": [
+            "src/Combinators.php",
+            "src/Controls.php",
+            "src/Handlers.php",
+            "src/Parsers.php"
+        ],
+        "classmap": [
+            "parser/"
+        ]
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.3",
+        "hoa/kitab": "dev-master#7bf846c74531d9d29cdcdb4beb923aab10a9ccd3"
+    },
+    "scripts": {
+        "doc": "kitab compile -o public -p PPC -l 'https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0' -d PPC src parser",
+        "cs": "php-cs-fixer fix ."
+    }
+}

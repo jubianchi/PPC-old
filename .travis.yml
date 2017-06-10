@@ -1,0 +1,20 @@
+language: php
+
+sudo: false
+
+php:
+  - 7.1
+  - nightly
+
+script:
+    - composer update --ignore-platform-reqs
+    - composer run doc
+
+deploy:
+    provider: pages
+    skip_cleanup: true
+    local_dir: public
+    github_token: $GITHUB_TOKEN
+    on:
+        php: 7.1
+        branch: master
