@@ -6,8 +6,12 @@ php:
   - 7.1
   - nightly
 
+before_script:
+    - phpenv config-rm xdebug.ini || return 0
+
 script:
     - composer update --ignore-platform-reqs
+    - composer run bench
     - composer run doc
 
 deploy:

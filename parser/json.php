@@ -21,7 +21,9 @@ use function PPC\Parsers\eof;
 use function PPC\Parsers\in;
 use function PPC\Parsers\is;
 use function PPC\Parsers\not;
+use function PPC\Parsers\numeric;
 use function PPC\Parsers\regex;
+use function PPC\Parsers\space;
 
 class JsonObject implements JsonSerializable
 {
@@ -86,7 +88,7 @@ class JsonParser
     public static function parse(CharStream $stream)
     {
         if (null === self::$parser) {
-            $spaces = repeat(regex('/\s/'));
+            $spaces = repeat(space());
             $rawString = boxed(
                 is('"'),
                 repeat(
@@ -109,7 +111,7 @@ class JsonParser
                 [
                     [@SIGN, optional(in(['+', '-']))],
                     [@HEAD, regex('/[0-9]/')],
-                    [@TAIL, optional(repeat(regex('/\d/'), merge()))]
+                    [@TAIL, optional(repeat(numeric(), merge()))]
                 ],
                 function (array $result) {
                     $int = intval($result[@HEAD] . $result[@TAIL]);
@@ -139,7 +141,7 @@ class JsonParser
                             chain(
                                 [
                                     is('.'),
-                                    repeat(regex('/\d/'), merge())
+                                    repeat(numeric(), merge())
                                 ],
                                 function (array $result) {
                                     return floatval('.'.$result[1]);
@@ -169,9 +171,7 @@ class JsonParser
                     optional($spaces),
                     [@VALUE, alternatives([$scalar, call($hash), call($array)])]
                 ],
-                function ($result) {
-                    return ['key' => $result[@KEY], 'value' => $result[@VALUE]];
-                }
+                extract([@KEY, @VALUE])
             );
             $hash = boxed(
                 chain([optional($spaces), is('{'), optional($spaces)]),
@@ -203,11 +203,7 @@ class JsonParser
                     $object = new JsonObject();
 
                     foreach ($results as $entry) {
-                        if ($entry instanceof \PPC\Slice) {
-                            continue;
-                        }
-
-                        $object->{$entry['key']} = $entry['value'];
+                        $object->{$entry[@KEY]} = $entry[@VALUE];
                     }
 
                     return $object;

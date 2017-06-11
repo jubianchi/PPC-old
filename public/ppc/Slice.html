@@ -46,17 +46,19 @@
     <h1>
     Class <code>PPC\Slice</code>
     <aside>
-        <a href="./ppc/Slice.source.html#L.7-49" title="View source">[src]</a>
+        <a href="./ppc/Slice.source.html#L.7-61" title="View source">[src]</a>
     </aside>
 </h1>
 
 <pre><code class="language-php">class Slice
 {
     public function __construct(int $offset, int $length, PPC\CharStream $stream);
-    public function offset();
-    public function length();
-    public function stream();
-    public function __toString();
+    public function offset(): int;
+    public function length(): int;
+    public function stream(): PPC\CharStream;
+    public function equals(string $expected): bool;
+    public function matches(string $pattern): bool;
+    public function __toString(): string;
 }</code></pre>
 
 <section class="entity__description"></section>
@@ -93,29 +95,43 @@
                 <section></section>
             </dd>
                     <dt aria-label="offset">
-                <code class="language-php">public function offset()</code>
+                <code class="language-php">public function offset(): int</code>
                 <aside><a href="./ppc/Slice.source.html#L.30-33" title="View source of the `offset` method">[src]</a></aside>
             </dt>
             <dd>
                 <section></section>
             </dd>
                     <dt aria-label="length">
-                <code class="language-php">public function length()</code>
+                <code class="language-php">public function length(): int</code>
                 <aside><a href="./ppc/Slice.source.html#L.35-38" title="View source of the `length` method">[src]</a></aside>
             </dt>
             <dd>
                 <section></section>
             </dd>
                     <dt aria-label="stream">
-                <code class="language-php">public function stream()</code>
+                <code class="language-php">public function stream(): PPC\CharStream</code>
                 <aside><a href="./ppc/Slice.source.html#L.40-43" title="View source of the `stream` method">[src]</a></aside>
             </dt>
             <dd>
                 <section></section>
             </dd>
+                    <dt aria-label="equals">
+                <code class="language-php">public function equals(string $expected): bool</code>
+                <aside><a href="./ppc/Slice.source.html#L.45-50" title="View source of the `equals` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="matches">
+                <code class="language-php">public function matches(string $pattern): bool</code>
+                <aside><a href="./ppc/Slice.source.html#L.52-55" title="View source of the `matches` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
                     <dt aria-label="__toString">
-                <code class="language-php">public function __toString()</code>
-                <aside><a href="./ppc/Slice.source.html#L.45-48" title="View source of the `__toString` method">[src]</a></aside>
+                <code class="language-php">public function __toString(): string</code>
+                <aside><a href="./ppc/Slice.source.html#L.57-60" title="View source of the `__toString` method">[src]</a></aside>
             </dt>
             <dd>
                 <section></section>

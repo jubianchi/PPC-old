@@ -48,14 +48,24 @@ function toString(callable $next = null) : callable
     };
 }
 
-function extract(string $item, callable $next = null) : callable
+function extract($item, callable $next = null) : callable
 {
     $next = $next ?? function ($result) {
         return $result;
     };
 
     return function (array $result) use ($item, $next) {
-        return $next($result[$item]);
+        if (is_array($item) === false) {
+            return $next($result[$item]);
+        }
+
+        return $next(array_filter(
+            $result,
+            function ($key) use ($item) {
+                return in_array($key, $item, true);
+            },
+            ARRAY_FILTER_USE_KEY
+        ));
     };
 }
 

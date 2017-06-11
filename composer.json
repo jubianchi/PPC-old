@@ -29,10 +29,12 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.3",
-        "hoa/kitab": "dev-master#7bf846c74531d9d29cdcdb4beb923aab10a9ccd3"
+        "hoa/kitab": "dev-master#7bf846c74531d9d29cdcdb4beb923aab10a9ccd3",
+        "phpbench/phpbench": "@dev"
     },
     "scripts": {
-        "doc": "kitab compile -o public -p PPC -l 'https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0' -d PPC src parser",
-        "cs": "php-cs-fixer fix ."
+        "doc": "kitab compile -o public -p PPC -l 'https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0' -d PPC src",
+        "cs": "php-cs-fixer fix .",
+        "bench": "phpbench run --report=aggregate"
     }
 }

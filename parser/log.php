@@ -9,13 +9,15 @@ use PPC\CharStream;
 use function PPC\Combinators\chain;
 use function PPC\Combinators\optional;
 use function PPC\Combinators\repeat;
+use function PPC\Combinators\until;
+use function PPC\Handlers\extract;
 use function PPC\Handlers\merge;
 use function PPC\Handlers\toString;
 use function PPC\Parsers\eof;
 use function PPC\Parsers\in;
 use function PPC\Parsers\is;
-use function PPC\Parsers\regex;
-use function PPC\Parsers\until;
+use function PPC\Parsers\numeric;
+use function PPC\Parsers\space;
 
 class LogParser
 {
@@ -24,34 +26,36 @@ class LogParser
     public static function parse(CharStream $stream)
     {
         if (null === self::$parser) {
+            $space = repeat(space());
             $separator = chain([
-                optional(repeat(regex('/\s/'))),
+                optional($space),
                 is('|&|'),
-                optional(repeat(regex('/\s/'))),
+                optional($space),
             ]);
+            $numeric = repeat(numeric(), merge());
             $date = chain(
                 [
-                    [@DAY, repeat(regex('/\d/'), merge())],
+                    [@DAY, $numeric],
                     is('/'),
-                    [@MONTH, repeat(regex('/\d/'), merge())],
+                    [@MONTH, $numeric],
                     is('/'),
-                    [@YEAR, repeat(regex('/\d/'), merge())],
-                    repeat(regex('/\s/')),
-                    [@HOUR, repeat(regex('/\d/'), merge())],
+                    [@YEAR, $numeric],
+                    $space,
+                    [@HOUR, $numeric],
                     is(':'),
-                    [@MINUTE, repeat(regex('/\d/'), merge())],
+                    [@MINUTE, $numeric],
                     is(':'),
-                    [@SECOND, repeat(regex('/\d/'), merge())],
+                    [@SECOND, $numeric],
                 ],
                 function ($result) {
                     return new DateTime(sprintf(
-                        '%d-%d-%d %d:%d:%d',
-                        (string) $result[@YEAR],
-                        (string) $result[@MONTH],
-                        (string) $result[@DAY],
-                        (string) $result[@HOUR],
-                        (string) $result[@MINUTE],
-                        (string) $result[@SECOND]
+                        '%s-%s-%s %s:%s:%s',
+                        $result[@YEAR],
+                        $result[@MONTH],
+                        $result[@DAY],
+                        $result[@HOUR],
+                        $result[@MINUTE],
+                        $result[@SECOND]
                     ));
                 }
             );
@@ -66,9 +70,7 @@ class LogParser
                     $separator,
                     [@CONTENT, until($separator)]
                 ],
-                function (array $result) {
-                    return ['date' => $result[@DATE], 'tag' => $result[@TAG], 'content' => $result[@CONTENT]];
-                }
+                extract([@DATE, @TAG, @CONTENT])
             );
 
             self::$parser = chain([[@LINES, repeat($line)], eof()], function (array $result) {

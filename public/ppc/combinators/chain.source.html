@@ -186,7 +186,7 @@ function alternatives(array $parsers, callable $next = null) : callable
     };
 };
 
-function boxed(callable $left, callable $content, callable $right, $next = null) : callable
+function boxed(callable $left, callable $content, callable $right, callable $next = null) : callable
 {
     $next = $next ?? function ($option) {
         return $option;
@@ -195,6 +195,34 @@ function boxed(callable $left, callable $content, callable $right, $next = null)
 
     return function (CharStream $stream) use ($parser, $next) {
         return $next($parser($stream)[1]);
+    };
+}
+
+function until(callable $parser, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($parser, $next) {
+        $offset = $stream-&gt;key();
+        $length = 0;
+
+        while ($stream-&gt;valid()) {
+            try {
+                $before = $stream-&gt;key();
+                $parser($stream);
+                $stream-&gt;seek($before);
+
+                break;
+            } catch (Exception $error) {
+                ++$length;
+
+                $stream-&gt;seek($offset + $length);
+            }
+        }
+
+        return $next(new Slice($offset, $length, $stream));
     };
 }
 </code></pre>

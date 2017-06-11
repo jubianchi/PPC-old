@@ -27,22 +27,34 @@ class Slice
         $this->stream = $stream;
     }
 
-    public function offset()
+    public function offset() : int
     {
         return $this->offset;
     }
 
-    public function length()
+    public function length() : int
     {
         return $this->length;
     }
 
-    public function stream()
+    public function stream() : CharStream
     {
         return $this->stream;
     }
 
-    public function __toString()
+    public function equals(string $expected) : bool
+    {
+        $actual = (string) $this;
+
+        return $actual === $expected;
+    }
+
+    public function matches(string $pattern) : bool
+    {
+        return preg_match($pattern, (string) $this) > 0;
+    }
+
+    public function __toString() : string
     {
         return $this->stream->cut($this->offset, $this->length);
     }

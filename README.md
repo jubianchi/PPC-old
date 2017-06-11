@@ -3,7 +3,7 @@
 ## Parser
 
 ```
-creator(matcher, handler(mixed[]) -> mixed) -> parser(stream) -> mixed[]
+creator(matcher, handler(Slice) -> mixed) -> parser(stream) -> mixed
 ```
 
 ## Combinator

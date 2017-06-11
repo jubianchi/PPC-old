@@ -18,6 +18,7 @@ use function PPC\Handlers\flatMap;
 use function PPC\Handlers\merge;
 use function PPC\Handlers\toString;
 use function PPC\Parsers\is;
+use function PPC\Parsers\numeric;
 use function PPC\Parsers\regex;
 use PPC\Slice;
 
@@ -35,7 +36,7 @@ class ChemicalParser
     {
         if (null === self::$parser) {
             $molecule = chain([regex('/[A-Z]/'), optional(regex('/[a-z]/'))], merge(toString()));
-            $quantifier = optional(repeat(regex('/\d/'), merge()), function (Slice $result) {
+            $quantifier = optional(repeat(numeric(), merge()), function (Slice $result) {
                 return (int) (((string) $result) ?: 1);
             });
             $element = chain(
