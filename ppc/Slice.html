@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <base href="./../" />
+        <title>PPC\Slice from PPC</title>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/javascript; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/css; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1.0" />
+
+        <link rel="stylesheet" href="./css/main.css" media="all" />
+        <link rel="stylesheet" href="./css/prism.css" media="all" />
+    </head>
+    <body>
+        <div id="search" role="search">
+            <div>
+                <input type="search" placeholder="Initializing search…" disabled />
+            </div>
+        </div>
+
+        <main>
+            <aside>
+    <header>
+        <a href="./">
+            <img src="https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0" alt="Home" />
+        </a>
+    </header>
+
+    <nav>
+        <h1><code><a href="./ppc/index.html">PPC</a></code></h1>
+
+                    <h2>Classes</h2>
+
+            <ul class="list--flat">
+                                    <li><a href="./ppc/CharStream.html"><code>CharStream</code></a></li>
+                                    <li><a href="./ppc/Slice.html"><code>Slice</code></a></li>
+                            </ul>
+        
+        
+        
+            </nav>
+</aside>
+
+<article>
+    <h1>
+    Class <code>PPC\Slice</code>
+    <aside>
+        <a href="./ppc/Slice.source.html#L.7-81" title="View source">[src]</a>
+    </aside>
+</h1>
+
+<pre><code class="language-php">class Slice
+{
+    public function __construct(int $offset, int $length, PPC\CharStream $stream);
+    public function offset(): int;
+    public function length(): int;
+    public function stream(): PPC\CharStream;
+    public function equals(string $expected): bool;
+    public function in(array $chars): bool;
+    public function matches(string $pattern): bool;
+    public function merge(self $slice): self;
+    public function __toString(): string;
+}</code></pre>
+
+<section class="entity__description"></section>
+
+
+    <h2 id="attributes">Attributes</h2>
+
+    <dl class="entity__children">
+                    <dt aria-label="offset"><code class="language-php">private $offset</code></dt>
+            <dd>
+                <section><p>@var int</p>
+</section>
+            </dd>
+                    <dt aria-label="length"><code class="language-php">private $length</code></dt>
+            <dd>
+                <section><p>@var int</p>
+</section>
+            </dd>
+                    <dt aria-label="stream"><code class="language-php">private $stream</code></dt>
+            <dd>
+                <section><p>@var CharStream</p>
+</section>
+            </dd>
+            </dl>
+
+    <h2 id="methods">Methods</h2>
+
+    <dl class="entity__children">
+                    <dt aria-label="__construct">
+                <code class="language-php">public function __construct(int $offset, int $length, PPC\CharStream $stream)</code>
+                <aside><a href="./ppc/Slice.source.html#L.23-28" title="View source of the `__construct` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="offset">
+                <code class="language-php">public function offset(): int</code>
+                <aside><a href="./ppc/Slice.source.html#L.30-33" title="View source of the `offset` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="length">
+                <code class="language-php">public function length(): int</code>
+                <aside><a href="./ppc/Slice.source.html#L.35-38" title="View source of the `length` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="stream">
+                <code class="language-php">public function stream(): PPC\CharStream</code>
+                <aside><a href="./ppc/Slice.source.html#L.40-43" title="View source of the `stream` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="equals">
+                <code class="language-php">public function equals(string $expected): bool</code>
+                <aside><a href="./ppc/Slice.source.html#L.45-50" title="View source of the `equals` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="in">
+                <code class="language-php">public function in(array $chars): bool</code>
+                <aside><a href="./ppc/Slice.source.html#L.52-57" title="View source of the `in` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="matches">
+                <code class="language-php">public function matches(string $pattern): bool</code>
+                <aside><a href="./ppc/Slice.source.html#L.59-62" title="View source of the `matches` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="merge">
+                <code class="language-php">public function merge(self $slice): self</code>
+                <aside><a href="./ppc/Slice.source.html#L.64-75" title="View source of the `merge` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="__toString">
+                <code class="language-php">public function __toString(): string</code>
+                <aside><a href="./ppc/Slice.source.html#L.77-80" title="View source of the `__toString` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+            </dl>
+
+</article>
+        </main>
+
+        <script type="text/javascript" src="./javascript/search.elm.js"></script>
+        <script type="text/javascript" src="./javascript/search-index.js"></script>
+        <script type="text/javascript" src="./javascript/search-metadata.js"></script>
+        <script type="text/javascript" src="./javascript/application.js"></script>
+        <script type="text/javascript" src="./javascript/prism.js"></script>
+        <script type="text/javascript" src="./javascript/prism-abbreviate.js" async defer></script>
+    </body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <base href="./../../" />
+        <title>Source of PPC\Parsers\manyIn from PPC</title>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/javascript; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/css; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1.0" />
+
+        <link rel="stylesheet" href="./css/main.css" media="all" />
+        <link rel="stylesheet" href="./css/prism.css" media="all" />
+    </head>
+    <body>
+        <div id="search" role="search">
+            <div>
+                <input type="search" placeholder="Initializing search…" disabled />
+            </div>
+        </div>
+
+        <main>
+            <aside>
+    <header>
+        <a href="./">
+            <img src="https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0" alt="Home" />
+        </a>
+    </header>
+</aside>
+
+<article>
+    <pre id="L" data-line="," class="line-numbers"><code class="language-php no-wrap-hooks">&lt;?php
+
+declare(strict_types=1);
+
+namespace PPC\Parsers;
+
+use Exception;
+use PPC\CharStream;
+use PPC\Slice;
+
+function is(string $word, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    $length = mb_strlen($word);
+
+    return function (CharStream $stream) use ($word, $length, $next) {
+        $slice = new Slice($stream-&gt;key(), $length, $stream);
+
+        if ($slice-&gt;equals($word) === false) {
+            throw new Exception(sprintf('Expected &quot;%s&quot;, got &quot;%s&quot; at offset %d', $word, $slice, $slice-&gt;offset()));
+        }
+
+        $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+
+        return $next($slice);
+    };
+}
+
+function manyIs(string $word, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    $length = mb_strlen($word);
+
+    return function (CharStream $stream) use ($word, $length, $next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; ($slice = (new Slice($stream-&gt;key(), $length, $stream)))-&gt;equals($word)) {
+            $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected &quot;%s&quot;, got &quot;%s&quot; at offset %d', $word, $slice, $slice-&gt;offset()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function not(string $char, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($char, $next) {
+        $slice = new Slice($stream-&gt;key(), 1, $stream);
+
+        if ($slice-&gt;equals($char)) {
+            throw new Exception(sprintf('Expected anything but &quot;%s&quot;, got &quot;%s&quot; at offset &quot;%d&quot;', $char, $slice, $slice-&gt;offset()));
+        }
+
+        $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+
+        return $next($slice);
+    };
+}
+
+function manyNot(string $char, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($char, $next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;equals($char) === false) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected anything but &quot;%s&quot;, got &quot;%s&quot; at offset &quot;%d&quot;', $char, $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function regex(string $regex, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($regex, $next) {
+        $slice = new Slice($stream-&gt;key(), 1, $stream);
+
+        if ($slice-&gt;matches($regex) === false) {
+            throw new Exception(sprintf('Expected character matching &quot;%s&quot;, got &quot;%s&quot; at offset %d', $regex, $slice, $slice-&gt;offset()));
+        }
+
+        $stream-&gt;next();
+
+        return $next($slice);
+    };
+}
+
+function in(array $words, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($words, $next) {
+        foreach ($words as $word) {
+            $slice = new Slice($stream-&gt;key(), mb_strlen($word), $stream);
+
+            if ($slice-&gt;equals($word)) {
+                $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+
+                return $next($slice);
+            }
+        }
+
+        throw new Exception(sprintf('Expected one of &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $words), $stream-&gt;key()));
+    };
+}
+
+function manyIn(array $words, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($words, $next) {
+        $offset = $stream-&gt;key();
+
+        try {
+            while ($stream-&gt;valid()) {
+                $currentOffset = $stream-&gt;key();
+
+                foreach ($words as $word) {
+                    $slice = new Slice($currentOffset, mb_strlen($word), $stream);
+
+                    if ($slice-&gt;equals($word)) {
+                        $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+
+                        break;
+                    }
+                }
+
+                if ($stream-&gt;key() === $currentOffset) {
+                    throw new Exception(sprintf('Expected one of &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $words), $stream-&gt;key()));
+                }
+            }
+        } catch (Exception $exception) {
+            if ($stream-&gt;key() === $offset) {
+                throw $exception;
+            }
+        }
+
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function notIn(array $chars, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($chars, $next) {
+        $slice = new Slice($stream-&gt;key(), 1, $stream);
+
+        foreach ($chars as $word) {
+            if ($slice-&gt;equals($word)) {
+                throw new Exception(sprintf('Expected none of &quot;%s&quot;, got &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $chars), $slice, $stream-&gt;key()));
+            }
+        }
+
+        $stream-&gt;next();
+
+        return $next($slice);
+    };
+}
+
+function manyNotIn(array $chars, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($chars, $next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;in($chars) === false) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected none of &quot;%s&quot;, got &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $chars), $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function eof(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use (&amp;$parser, $next) {
+        $offset = $stream-&gt;key();
+
+        $stream-&gt;next();
+
+        if ($stream-&gt;valid()) {
+            throw new Exception(sprintf(&quot;Expected EOF, got %s at offset %d&quot;, $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return new Slice($offset, 0, $stream);
+    };
+}
+
+function eol(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        if ($stream-&gt;current() === &quot;\n&quot; || $stream-&gt;current() === &quot;\r&quot;) {
+            $slice = new Slice($stream-&gt;key(), 1, $stream);
+            $stream-&gt;next();
+
+            return $next($slice);
+        }
+
+
+        throw new Exception(sprintf('Expected &quot;\n&quot; or &quot;\r&quot;, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function space(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        if (preg_match('/\s/', $stream-&gt;current()) &gt; 0) {
+            $slice = new Slice($stream-&gt;key(), 1, $stream);
+            $stream-&gt;next();
+
+            return $next($slice);
+        }
+
+        throw new Exception(sprintf('Expected any space character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function manySpace(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/\s/')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any space character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function alpha(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        if (preg_match('/[[:alpha:]]/u', $stream-&gt;current()) &gt; 0) {
+            $slice = new Slice($stream-&gt;key(), 1, $stream);
+            $stream-&gt;next();
+
+            return $next($slice);
+        }
+
+        throw new Exception(sprintf('Expected any alphabetic character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function manyAlpha(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/[[:alpha:]]/u')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any alphabetic character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function numeric(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        if (preg_match('/\d/', $stream-&gt;current()) &gt; 0) {
+            $slice = new Slice($stream-&gt;key(), 1, $stream);
+            $stream-&gt;next();
+
+            return $next($slice);
+        }
+
+        throw new Exception(sprintf('Expected any numeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function manyNumeric(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/\d/')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any numeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function alnum(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        if (preg_match('/[[:alnum:]]/u', $stream-&gt;current()) &gt; 0) {
+            $slice = new Slice($stream-&gt;key(), 1, $stream);
+            $stream-&gt;next();
+
+            return $next($slice);
+        }
+
+        throw new Exception(sprintf('Expected any alphanumeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function manyAlnum(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/[[:alnum:]]/u')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any alphanumeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+</code></pre>
+</article>
+        </main>
+
+        <script type="text/javascript" src="./javascript/search.elm.js"></script>
+        <script type="text/javascript" src="./javascript/search-index.js"></script>
+        <script type="text/javascript" src="./javascript/search-metadata.js"></script>
+        <script type="text/javascript" src="./javascript/application.js"></script>
+        <script type="text/javascript" src="./javascript/prism.js"></script>
+        <script type="text/javascript" src="./javascript/prism-abbreviate.js" async defer></script>
+    </body>
+</html>

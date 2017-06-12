@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <base href="./../../" />
+        <title>Source of PPC\Combinators\until from PPC</title>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/javascript; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/css; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1.0" />
+
+        <link rel="stylesheet" href="./css/main.css" media="all" />
+        <link rel="stylesheet" href="./css/prism.css" media="all" />
+    </head>
+    <body>
+        <div id="search" role="search">
+            <div>
+                <input type="search" placeholder="Initializing search…" disabled />
+            </div>
+        </div>
+
+        <main>
+            <aside>
+    <header>
+        <a href="./">
+            <img src="https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0" alt="Home" />
+        </a>
+    </header>
+</aside>
+
+<article>
+    <pre id="L" data-line="," class="line-numbers"><code class="language-php no-wrap-hooks">&lt;?php
+
+declare(strict_types=1);
+
+namespace PPC\Combinators;
+
+use Exception;
+use PPC\CharStream;
+use PPC\Slice;
+
+/**
+ * Chains several parsers and returns an array of the matched slices.
+ *
+ * The chain will match only if all chained parsers match. It will stop and raise an error when a prser fails.
+ *
+ * ## Example
+ *
+ * ```php
+ * use PPC\CharStream;
+ * use function PPC\Combinators\chain;
+ * use function PPC\Parsers\is;
+ * use function PPC\Parsers\not;
+ *
+ * $parser = chain([is('a'), not('a')]);
+ * $stream = new CharStream('abcd');
+ *
+ * assert($parser($stream) == [new \PPC\Slice(0, 1, $stream), new \PPC\Slice(1, 1, $stream)]);
+ * assert($stream-&gt;current() === 'c');
+ * ```
+ */
+function chain(array $parsers, callable $next = null) : callable
+{
+    $next = $next ?? function (array $chain) {
+        return $chain;
+    };
+
+    return function (CharStream $stream) use ($parsers, $next) {
+        $chain = [];
+
+        foreach ($parsers as $parser) {
+            $key = null;
+
+            if (is_array($parser)) {
+                list($key, $parser) = $parser;
+            }
+
+            $result = $parser($stream);
+
+            if (null !== $key) {
+                $chain[$key] = $result;
+            } else {
+                $chain[] = $result;
+            }
+        }
+
+        return $next($chain);
+    };
+}
+
+/**
+ * ```php
+ * use PPC\CharStream;
+ * use function PPC\Combinators\repeat;
+ * use function PPC\Parsers\is;
+ *
+ * $parser = repeat(is('a'));
+ * $stream = new CharStream('aaabcd');
+ *
+ * assert($parser($stream) == [new \PPC\Slice(0, 1, $stream), new \PPC\Slice(1, 1, $stream), new \PPC\Slice(2, 1, $stream)]);
+ * assert($stream-&gt;current() === 'b');
+ * ```
+ */
+function repeat(callable $parser, callable $next = null) : callable
+{
+    $next = $next ?? function ($repeat) {
+        return $repeat;
+    };
+
+    return function (CharStream $stream) use ($parser, $next) {
+        $repeat = [];
+        $error = null;
+
+        while ($stream-&gt;valid()) {
+            try {
+                $repeat[] = $parser($stream);
+            } catch (Exception $error) {
+                break;
+            }
+        }
+
+        if (empty($repeat)) {
+            $message = 'Could not match repetition';
+
+            if (null !== $error) {
+                $message .= &quot;:\n&quot;.$error-&gt;getMessage();
+            }
+
+            throw new Exception($message);
+        }
+
+        return $next($repeat);
+    };
+}
+
+/**
+ * ```php
+ * use PPC\CharStream;
+ * use function PPC\Combinators\optional;
+ * use function PPC\Parsers\is;
+ *
+ * $parser = optional(is('a'));
+ * $stream = new CharStream('abcd');
+ *
+ * assert($parser($stream) == new \PPC\Slice(0, 1, $stream));
+ * assert($stream-&gt;current() === 'b');
+ * ```
+ */
+function optional(callable $parser, callable $next = null) : callable
+{
+    $next = $next ?? function ($option) {
+        return $option;
+    };
+
+    return function (CharStream $stream) use ($parser, $next) {
+        try {
+            return $next($parser($stream));
+        } catch (Exception $e) {
+            return $next(new Slice($stream-&gt;key(), 0, $stream));
+        }
+    };
+};
+
+function alternatives(array $parsers, callable $next = null) : callable
+{
+    $next = $next ?? function ($option) {
+        return $option;
+    };
+
+    return function (CharStream $stream) use ($parsers, $next) {
+        $errors = [];
+
+        foreach ($parsers as $k =&gt; $parser) {
+            try {
+                return $next($parser($stream));
+            } catch (Exception $error) {
+                $errors[] = $error;
+            }
+        }
+
+        $errors = array_map(function (Exception $error) {
+            return $error-&gt;getMessage();
+        }, $errors);
+
+        throw new Exception(sprintf('None of the alternatives matched: %s', &quot;\n  &quot;.implode(&quot;\n  &quot;, $errors)));
+    };
+};
+
+function boxed(callable $left, callable $content, callable $right, callable $next = null) : callable
+{
+    $next = $next ?? function ($option) {
+        return $option;
+    };
+    $parser = chain([$left, $content, $right]);
+
+    return function (CharStream $stream) use ($parser, $next) {
+        return $next($parser($stream)[1]);
+    };
+}
+
+function until(callable $parser, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($parser, $next) {
+        $offset = $stream-&gt;key();
+        $length = 0;
+
+        while ($stream-&gt;valid()) {
+            try {
+                $before = $stream-&gt;key();
+                $parser($stream);
+                $stream-&gt;seek($before);
+
+                break;
+            } catch (Exception $error) {
+                ++$length;
+
+                $stream-&gt;seek($offset + $length);
+            }
+        }
+
+        return $next(new Slice($offset, $length, $stream));
+    };
+}
+</code></pre>
+</article>
+        </main>
+
+        <script type="text/javascript" src="./javascript/search.elm.js"></script>
+        <script type="text/javascript" src="./javascript/search-index.js"></script>
+        <script type="text/javascript" src="./javascript/search-metadata.js"></script>
+        <script type="text/javascript" src="./javascript/application.js"></script>
+        <script type="text/javascript" src="./javascript/prism.js"></script>
+        <script type="text/javascript" src="./javascript/prism-abbreviate.js" async defer></script>
+    </body>
+</html>

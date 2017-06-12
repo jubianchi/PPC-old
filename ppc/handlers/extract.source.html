@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <base href="./../../" />
+        <title>Source of PPC\Handlers\extract from PPC</title>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/javascript; charset=utf-8" />
+        <meta http-equiv="content-type" content="text/css; charset=utf-8" />
+        <meta name="viewport" content="initial-scale=1.0" />
+
+        <link rel="stylesheet" href="./css/main.css" media="all" />
+        <link rel="stylesheet" href="./css/prism.css" media="all" />
+    </head>
+    <body>
+        <div id="search" role="search">
+            <div>
+                <input type="search" placeholder="Initializing search…" disabled />
+            </div>
+        </div>
+
+        <main>
+            <aside>
+    <header>
+        <a href="./">
+            <img src="https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0" alt="Home" />
+        </a>
+    </header>
+</aside>
+
+<article>
+    <pre id="L" data-line="," class="line-numbers"><code class="language-php no-wrap-hooks">&lt;?php
+
+declare(strict_types=1);
+
+namespace PPC\Handlers;
+
+use PPC\Slice;
+
+function toString(callable $next = null) : callable
+{
+    $next = $next ?? function (string $string) {
+        return $string;
+    };
+
+    return function (Slice $slice) use ($next) {
+        return $next((string) $slice);
+    };
+}
+
+function extract($item, callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (array $result) use ($item, $next) {
+        if (is_array($item) === false) {
+            return $next($result[$item]);
+        }
+
+        return $next(array_filter(
+            $result,
+            function ($key) use ($item) {
+                return in_array($key, $item, true);
+            },
+            ARRAY_FILTER_USE_KEY
+        ));
+    };
+}
+
+function flatMap(callable $next = null)
+{
+    $next = $next ?? function ($string) {
+        return $string;
+    };
+
+    return function (array $results) use ($next) {
+        return $next(
+            array_reduce(
+                $results,
+                function ($prev, $result) use ($next) {
+                    if (is_array($result)) {
+                        return array_merge($prev, $result);
+                    }
+
+                    $prev[] = $result;
+
+                    return $prev;
+                },
+                []
+            )
+        );
+    };
+}
+
+/**
+ * ## Example
+ *
+ * ```php
+ * use PPC\CharStream;
+ * use function PPC\Combinators\chain;
+ * use function PPC\Handlers\merge;
+ * use function PPC\Parsers\is;
+ * use function PPC\Parsers\not;
+ *
+ * $parser = chain([is('a'), not('a')], merge());
+ * $stream = new CharStream('abcd');
+ *
+ * assert($parser($stream) == new \PPC\Slice(0, 2, $stream));
+ * assert($stream-&gt;current() === 'c');
+ * ```
+ */
+function merge(callable $next = null)
+{
+    $next = $next ?? function ($string) {
+        return $string;
+    };
+
+    return function (array $results) use ($next) {
+        return $next(current($results)-&gt;merge(end($results)));
+    };
+}
+</code></pre>
+</article>
+        </main>
+
+        <script type="text/javascript" src="./javascript/search.elm.js"></script>
+        <script type="text/javascript" src="./javascript/search-index.js"></script>
+        <script type="text/javascript" src="./javascript/search-metadata.js"></script>
+        <script type="text/javascript" src="./javascript/application.js"></script>
+        <script type="text/javascript" src="./javascript/prism.js"></script>
+        <script type="text/javascript" src="./javascript/prism-abbreviate.js" async defer></script>
+    </body>
+</html>
