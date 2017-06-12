@@ -35,6 +35,7 @@
     "scripts": {
         "doc": "kitab compile -o public -p PPC -l 'https://avatars3.githubusercontent.com/u/327237?v=3&s=46D0' -d PPC src",
         "cs": "php-cs-fixer fix .",
-        "bench": "phpbench run --report=aggregate"
+        "bench-ref": "phpbench run --report=aggregate --dump-file=benchmarks/ref.xml",
+        "bench": "phpbench run --report=aggregate --dump-file=benchmarks/curr.xml && phpbench report --report=compare --file=benchmarks/ref.xml --file=benchmarks/curr.xml"
     }
 }

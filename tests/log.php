@@ -38,4 +38,6 @@ LOG;
 
 $stream = new CharStream($log);
 
-var_dump(LogParser::parse($stream));
+$start = microtime(true);
+LogParser::parse($stream);
+var_dump('PPC: ' . (microtime(true) - $start));

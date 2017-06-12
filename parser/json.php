@@ -20,10 +20,11 @@ use function PPC\Handlers\toString;
 use function PPC\Parsers\eof;
 use function PPC\Parsers\in;
 use function PPC\Parsers\is;
-use function PPC\Parsers\not;
-use function PPC\Parsers\numeric;
+use function PPC\Parsers\manyIn;
+use function PPC\Parsers\manyNot;
+use function PPC\Parsers\manyNumeric;
+use function PPC\Parsers\manySpace;
 use function PPC\Parsers\regex;
-use function PPC\Parsers\space;
 use PPC\Slice;
 
 class JsonObject implements JsonSerializable
@@ -89,14 +90,14 @@ class JsonParser
     public static function parse(CharStream $stream)
     {
         if (null === self::$parser) {
-            $spaces = repeat(space());
+            $spaces = manySpace();
             $rawString = boxed(
                 is('"'),
                 optional(
                     repeat(
                         alternatives([
-                            in(['\\', '\"']),
-                            not('"')
+                            manyIn(['\\', '\"']),
+                            manyNot('"')
                         ]),
                         merge()
                     )
@@ -114,7 +115,7 @@ class JsonParser
                 [
                     [@SIGN, optional(in(['+', '-']))],
                     [@HEAD, regex('/[0-9]/')],
-                    [@TAIL, optional(repeat(numeric(), merge()))]
+                    [@TAIL, optional(manyNumeric())]
                 ],
                 function (array $result) {
                     $int = intval($result[@HEAD] . $result[@TAIL]);
@@ -144,7 +145,7 @@ class JsonParser
                             chain(
                                 [
                                     is('.'),
-                                    repeat(numeric(), merge())
+                                    manyNumeric()
                                 ],
                                 function (array $result) {
                                     return floatval('.'.$result[1]);

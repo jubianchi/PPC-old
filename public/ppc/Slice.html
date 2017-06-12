@@ -46,7 +46,7 @@
     <h1>
     Class <code>PPC\Slice</code>
     <aside>
-        <a href="./ppc/Slice.source.html#L.7-61" title="View source">[src]</a>
+        <a href="./ppc/Slice.source.html#L.7-81" title="View source">[src]</a>
     </aside>
 </h1>
 
@@ -57,7 +57,9 @@
     public function length(): int;
     public function stream(): PPC\CharStream;
     public function equals(string $expected): bool;
+    public function in(array $chars): bool;
     public function matches(string $pattern): bool;
+    public function merge(self $slice): self;
     public function __toString(): string;
 }</code></pre>
 
@@ -122,16 +124,30 @@
             <dd>
                 <section></section>
             </dd>
+                    <dt aria-label="in">
+                <code class="language-php">public function in(array $chars): bool</code>
+                <aside><a href="./ppc/Slice.source.html#L.52-57" title="View source of the `in` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
                     <dt aria-label="matches">
                 <code class="language-php">public function matches(string $pattern): bool</code>
-                <aside><a href="./ppc/Slice.source.html#L.52-55" title="View source of the `matches` method">[src]</a></aside>
+                <aside><a href="./ppc/Slice.source.html#L.59-62" title="View source of the `matches` method">[src]</a></aside>
+            </dt>
+            <dd>
+                <section></section>
+            </dd>
+                    <dt aria-label="merge">
+                <code class="language-php">public function merge(self $slice): self</code>
+                <aside><a href="./ppc/Slice.source.html#L.64-75" title="View source of the `merge` method">[src]</a></aside>
             </dt>
             <dd>
                 <section></section>
             </dd>
                     <dt aria-label="__toString">
                 <code class="language-php">public function __toString(): string</code>
-                <aside><a href="./ppc/Slice.source.html#L.57-60" title="View source of the `__toString` method">[src]</a></aside>
+                <aside><a href="./ppc/Slice.source.html#L.77-80" title="View source of the `__toString` method">[src]</a></aside>
             </dt>
             <dd>
                 <section></section>

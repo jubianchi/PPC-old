@@ -118,20 +118,7 @@ function merge(callable $next = null)
     };
 
     return function (array $results) use ($next) {
-        $first = null;
-        $length = array_reduce(
-            $results,
-            function ($prev, Slice $result) use (&amp;$first) {
-                if (null === $first) {
-                    $first = $result;
-                }
-
-                return $prev + $result-&gt;length();
-            },
-            0
-        );
-
-        return $next(new Slice(current($results)-&gt;offset(), $length, $first-&gt;stream()));
+        return $next(current($results)-&gt;merge(end($results)));
     };
 }
 </code></pre>

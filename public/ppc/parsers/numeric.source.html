@@ -37,7 +37,6 @@ namespace PPC\Parsers;
 
 use Exception;
 use PPC\CharStream;
-use function PPC\Handlers\identity;
 use PPC\Slice;
 
 function is(string $word, callable $next = null) : callable
@@ -61,24 +60,66 @@ function is(string $word, callable $next = null) : callable
     };
 }
 
-function not(string $word, callable $next = null) : callable
+function manyIs(string $word, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+            return $slice;
+        };
+
+    $length = mb_strlen($word);
+
+    return function (CharStream $stream) use ($word, $length, $next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; ($slice = (new Slice($stream-&gt;key(), $length, $stream)))-&gt;equals($word)) {
+            $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected &quot;%s&quot;, got &quot;%s&quot; at offset %d', $word, $slice, $slice-&gt;offset()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function not(string $char, callable $next = null) : callable
 {
     $next = $next ?? function (Slice $slice) {
         return $slice;
     };
 
-    $length = mb_strlen($word);
+    return function (CharStream $stream) use ($char, $next) {
+        $slice = new Slice($stream-&gt;key(), 1, $stream);
 
-    return function (CharStream $stream) use ($word, $length, $next) {
-        $slice = new Slice($stream-&gt;key(), $length, $stream);
-
-        if ($slice-&gt;equals($word)) {
-            throw new Exception(sprintf('Expected anything but &quot;%s&quot;, got &quot;%s&quot; at offset &quot;%d&quot;', $word, $slice, $slice-&gt;offset()));
+        if ($slice-&gt;equals($char)) {
+            throw new Exception(sprintf('Expected anything but &quot;%s&quot;, got &quot;%s&quot; at offset &quot;%d&quot;', $char, $slice, $slice-&gt;offset()));
         }
 
         $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
 
         return $next($slice);
+    };
+}
+
+function manyNot(string $char, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($char, $next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;equals($char) === false) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected anything but &quot;%s&quot;, got &quot;%s&quot; at offset &quot;%d&quot;', $char, $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
     };
 }
 
@@ -122,6 +163,86 @@ function in(array $words, callable $next = null) : callable
     };
 }
 
+function manyIn(array $words, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($words, $next) {
+        $offset = $stream-&gt;key();
+
+        try {
+            while ($stream-&gt;valid()) {
+                $currentOffset = $stream-&gt;key();
+
+                foreach ($words as $word) {
+                    $slice = new Slice($currentOffset, mb_strlen($word), $stream);
+
+                    if ($slice-&gt;equals($word)) {
+                        $stream-&gt;seek($slice-&gt;offset() + $slice-&gt;length());
+
+                        break;
+                    }
+                }
+
+                if ($stream-&gt;key() === $currentOffset) {
+                    throw new Exception(sprintf('Expected one of &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $words), $stream-&gt;key()));
+                }
+            }
+        } catch (Exception $exception) {
+            if ($stream-&gt;key() === $offset) {
+                throw $exception;
+            }
+        }
+
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
+function notIn(array $chars, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($chars, $next) {
+        $slice = new Slice($stream-&gt;key(), 1, $stream);
+
+        foreach ($chars as $word) {
+            if ($slice-&gt;equals($word)) {
+                throw new Exception(sprintf('Expected none of &quot;%s&quot;, got &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $chars), $slice, $stream-&gt;key()));
+            }
+        }
+
+        $stream-&gt;next();
+
+        return $next($slice);
+    };
+}
+
+function manyNotIn(array $chars, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+        return $slice;
+    };
+
+    return function (CharStream $stream) use ($chars, $next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;in($chars) === false) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected none of &quot;%s&quot;, got &quot;%s&quot; at offset %d', implode('&quot;, &quot;', $chars), $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
 function eof(callable $next = null) : callable
 {
     $next = $next ?? function ($result) {
@@ -134,7 +255,7 @@ function eof(callable $next = null) : callable
         $stream-&gt;next();
 
         if ($stream-&gt;valid()) {
-            throw new Exception(sprintf(&quot;Expected EOF, got %s at offset %d: %s&quot;, $stream-&gt;current(), $stream-&gt;key(), $stream-&gt;cut($stream-&gt;key(), $stream-&gt;key() + 5)));
+            throw new Exception(sprintf(&quot;Expected EOF, got %s at offset %d&quot;, $stream-&gt;current(), $stream-&gt;key()));
         }
 
         return new Slice($offset, 0, $stream);
@@ -178,6 +299,27 @@ function space(callable $next = null) : callable
     };
 }
 
+function manySpace(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+        return $result;
+    };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/\s/')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any space character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
 function alpha(callable $next = null) : callable
 {
     $next = $next ?? function ($result) {
@@ -196,6 +338,27 @@ function alpha(callable $next = null) : callable
     };
 }
 
+function manyAlpha(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+            return $result;
+        };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/[[:alpha:]]/u')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any alphabetic character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
+    };
+}
+
 function numeric(callable $next = null) : callable
 {
     $next = $next ?? function ($result) {
@@ -210,7 +373,28 @@ function numeric(callable $next = null) : callable
             return $next($slice);
         }
 
-        throw new Exception(sprintf('Expected any alphabetic character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        throw new Exception(sprintf('Expected any numeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function manyNumeric(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+            return $result;
+        };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/\d/')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any numeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
     };
 }
 
@@ -228,7 +412,28 @@ function alnum(callable $next = null) : callable
             return $next($slice);
         }
 
-        throw new Exception(sprintf('Expected any alphabetic character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        throw new Exception(sprintf('Expected any alphanumeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+    };
+}
+
+function manyAlnum(callable $next = null) : callable
+{
+    $next = $next ?? function ($result) {
+            return $result;
+        };
+
+    return function (CharStream $stream) use ($next) {
+        $offset = $stream-&gt;key();
+
+        while ($stream-&gt;valid() &amp;&amp; (new Slice($stream-&gt;key(), 1, $stream))-&gt;matches('/[[:alnum:]]/u')) {
+            $stream-&gt;next();
+        }
+
+        if ($stream-&gt;key() === $offset) {
+            throw new Exception(sprintf('Expected any alphanumeric character, got &quot;%s&quot; at offset %d', $stream-&gt;current(), $stream-&gt;key()));
+        }
+
+        return $next(new Slice($offset, $stream-&gt;key() - $offset, $stream));
     };
 }
 </code></pre>

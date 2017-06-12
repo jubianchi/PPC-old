@@ -10,5 +10,5 @@ require_once __DIR__ . '/../vendor/autoload.php';
 $stream = new CharStream('C6H12O6CCl2F2NaHCO3C4H8(OHPbCl(NH3C6H12O6CCl2F2NaHCO3C4H8(OHPbCl(NH3)2(COOH)2)2)2(COOH)2)2');
 
 $start = microtime(true);
-var_dump(ChemicalParser::parse($stream));
+ChemicalParser::parse($stream);
 var_dump('PPC: ' . (microtime(true) - $start));

@@ -20,4 +20,6 @@ LOG;
 
 $stream = new CharStream($log);
 
-var_dump(ConventionalChangelogParser::parse($stream));
+$start = microtime(true);
+ConventionalChangelogParser::parse($stream);
+var_dump('PPC: ' . (microtime(true) - $start));

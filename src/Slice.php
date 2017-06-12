@@ -49,6 +49,13 @@ class Slice
         return $actual === $expected;
     }
 
+    public function in(array $chars) : bool
+    {
+        $actual = (string) $this;
+
+        return in_array($actual, $chars, true);
+    }
+
     public function matches(string $pattern) : bool
     {
         return preg_match($pattern, (string) $this) > 0;
