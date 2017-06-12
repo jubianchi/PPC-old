@@ -87,19 +87,6 @@ function merge(callable $next = null)
     };
 
     return function (array $results) use ($next) {
-        $first = null;
-        $length = array_reduce(
-            $results,
-            function ($prev, Slice $result) use (&$first) {
-                if (null === $first) {
-                    $first = $result;
-                }
-
-                return $prev + $result->length();
-            },
-            0
-        );
-
-        return $next(new Slice(current($results)->offset(), $length, $first->stream()));
+        return $next(current($results)->merge(end($results)));
     };
 }

@@ -28,7 +28,7 @@ class CharStream implements SeekableIterator
 
     public function current()
     {
-        return $this->string[$this->position];
+        return mb_substr($this->string, $this->position, 1);
     }
 
     public function next()

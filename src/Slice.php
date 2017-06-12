@@ -54,6 +54,19 @@ class Slice
         return preg_match($pattern, (string) $this) > 0;
     }
 
+    public function merge(self $slice) : self
+    {
+        $first = $this;
+        $last = $slice;
+
+        if ($slice->offset() < $this->offset) {
+            $first = $slice;
+            $last = $this;
+        }
+
+        return new Slice($first->offset(), $last->offset() + $last->length() - $first->offset(), $first->stream());
+    }
+
     public function __toString() : string
     {
         return $this->stream->cut($this->offset, $this->length);

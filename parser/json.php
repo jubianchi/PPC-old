@@ -24,6 +24,7 @@ use function PPC\Parsers\not;
 use function PPC\Parsers\numeric;
 use function PPC\Parsers\regex;
 use function PPC\Parsers\space;
+use PPC\Slice;
 
 class JsonObject implements JsonSerializable
 {
@@ -91,15 +92,17 @@ class JsonParser
             $spaces = repeat(space());
             $rawString = boxed(
                 is('"'),
-                repeat(
-                    alternatives([
-                        is('\\'),
-                        is('\"'),
-                        not('"')
-                    ])
+                optional(
+                    repeat(
+                        alternatives([
+                            in(['\\', '\"']),
+                            not('"')
+                        ]),
+                        merge()
+                    )
                 ),
                 is('"'),
-                merge(toString())
+                toString()
             );
             $string = run($rawString, function ($result) {
                 $string = new JsonString();
@@ -203,6 +206,10 @@ class JsonParser
                     $object = new JsonObject();
 
                     foreach ($results as $entry) {
+                        if ($entry instanceof Slice) {
+                            continue;
+                        }
+
                         $object->{$entry[@KEY]} = $entry[@VALUE];
                     }
 
@@ -237,12 +244,15 @@ class JsonParser
                 chain([optional($spaces), is(']'), optional($spaces)]),
                 function ($results) {
                     $object = new JsonArray();
-                    $object->items = array_filter(
-                        $results,
-                        function ($result) {
-                            return !$result instanceof \PPC\Slice;
-                        }
-                    );
+
+                    if (!$results instanceof Slice) {
+                        $object->items = array_filter(
+                            $results,
+                            function ($result) {
+                                return !$result instanceof Slice;
+                            }
+                        );
+                    }
 
                     return $object;
                 }

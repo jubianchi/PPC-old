@@ -6,7 +6,6 @@ namespace PPC\Parsers;
 
 use Exception;
 use PPC\CharStream;
-use function PPC\Handlers\identity;
 use PPC\Slice;
 
 function is(string $word, callable $next = null) : callable
@@ -30,19 +29,17 @@ function is(string $word, callable $next = null) : callable
     };
 }
 
-function not(string $word, callable $next = null) : callable
+function not(string $char, callable $next = null) : callable
 {
     $next = $next ?? function (Slice $slice) {
         return $slice;
     };
 
-    $length = mb_strlen($word);
+    return function (CharStream $stream) use ($char, $next) {
+        $slice = new Slice($stream->key(), 1, $stream);
 
-    return function (CharStream $stream) use ($word, $length, $next) {
-        $slice = new Slice($stream->key(), $length, $stream);
-
-        if ($slice->equals($word)) {
-            throw new Exception(sprintf('Expected anything but "%s", got "%s" at offset "%d"', $word, $slice, $slice->offset()));
+        if ($slice->equals($char)) {
+            throw new Exception(sprintf('Expected anything but "%s", got "%s" at offset "%d"', $char, $slice, $slice->offset()));
         }
 
         $stream->seek($slice->offset() + $slice->length());
@@ -91,6 +88,28 @@ function in(array $words, callable $next = null) : callable
     };
 }
 
+function notIn(array $chars, callable $next = null) : callable
+{
+    $next = $next ?? function (Slice $slice) {
+            return $slice;
+        };
+
+    return function (CharStream $stream) use ($chars, $next) {
+        $slice = new Slice($stream->key(), 1, $stream);
+
+        foreach ($chars as $word) {
+            if ($slice->equals($word)) {
+                throw new Exception(sprintf('Expected none of "%s", got "%s" at offset %d', implode('", "', $chars), $slice, $stream->key()));
+            }
+        }
+
+        $stream->next();
+
+        return $next($slice);
+    };
+}
+
+
 function eof(callable $next = null) : callable
 {
     $next = $next ?? function ($result) {
@@ -103,7 +122,7 @@ function eof(callable $next = null) : callable
         $stream->next();
 
         if ($stream->valid()) {
-            throw new Exception(sprintf("Expected EOF, got %s at offset %d: %s", $stream->current(), $stream->key(), $stream->cut($stream->key(), $stream->key() + 5)));
+            throw new Exception(sprintf("Expected EOF, got %s at offset %d", $stream->current(), $stream->key()));
         }
 
         return new Slice($offset, 0, $stream);
